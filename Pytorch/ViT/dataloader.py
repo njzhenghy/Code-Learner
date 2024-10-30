@@ -25,7 +25,10 @@ transform_imagenet = transforms.Compose([
 
 # MNIST
 train_dataset_mnist = datasets.MNIST(root='./data', train=True, transform=transform_mnist, download=True)
-train_loader_mnist = DataLoader(train_dataset_mnist, batch_size=1, shuffle=True)
+train_loader_mnist = DataLoader(train_dataset_mnist, batch_size=64, shuffle=True)
+
+val_dataset_mnist = datasets.MNIST(root='./data', train=False, transform=transform_mnist, download=True)
+val_loader_mnist = DataLoader(val_dataset_mnist, batch_size=64, shuffle=False)
 
 # CIFAR-10
 train_dataset_cifar = datasets.CIFAR10(root='./data', train=True, transform=transform_cifar, download=True)

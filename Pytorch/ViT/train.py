@@ -2,7 +2,7 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 from model import ViT
-from dataloader import train_loader_mnist
+from dataloader import train_loader_mnist, val_loader_mnist
 
 model = ViT(
     image_size=28,
@@ -49,7 +49,19 @@ def train(loader):
 
 print("start training...")
 # Example usage:
-epochs = 10
+epochs = 20
 for epoch in range(epochs):
     avg_loss, accuracy = train(train_loader_mnist)  # For MNIST
     print(f"Epoch [{epoch + 1}/{epochs}], Loss: {avg_loss:.4f}, Accuracy: {accuracy:.2f}%")
+
+    if (epoch + 1) % 10 == 0:
+        model.eval()
+        val_loss = 0
+        with torch.no_grad():
+            for val_images, _ in val_loader_mnist:
+                val_images = val_images.to(device)
+                val_outputs = model(val_images)
+                val_loss += criterion(val_outputs, val_images).item()
+
+        avg_val_loss = val_loss / len(val_loader_mnist)
+        print(f"Epoch [{epoch + 1}/{epochs}], Validation Loss: {avg_val_loss:.4f}")
