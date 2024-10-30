@@ -8,7 +8,7 @@ transform_mnist = transforms.Compose([
     transforms.Grayscale(num_output_channels=3),
     # transforms.Resize((28, 28)),
     transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,))  # 如果需要
+    transforms.Normalize((0.1307,), (0.3081,))
 ])
 
 transform_cifar = transforms.Compose([
