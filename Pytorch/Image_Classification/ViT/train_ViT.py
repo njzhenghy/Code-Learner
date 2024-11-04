@@ -106,6 +106,8 @@ def train(loader):
     return step, total_loss.avg, top1.avg, top5.avg
 
 
+
+
 if __name__ == "__main__": 
     for epoch in range(args.epochs):
         logging.info('Epoch %d lr %e', epoch, scheduler.get_lr()[0])
