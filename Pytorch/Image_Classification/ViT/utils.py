@@ -88,6 +88,7 @@ class AvgrageMeter(object):
         self.avg = self.sum / self.cnt
 
 
+
 def _accuracy(output, target, topk=(1,), batch_size=16):
     maxk = max(topk)
     batch_size = target.size(0)

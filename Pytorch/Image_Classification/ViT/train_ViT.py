@@ -78,6 +78,8 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epo
 criterion = nn.CrossEntropyLoss()
 best_acc = 0.
 model.to(device)
+
+
 def train(loader):
     model.train()
     batch_loss = 0
@@ -103,20 +105,22 @@ def train(loader):
 
     return step, total_loss.avg, top1.avg, top5.avg
 
-for epoch in range(args.epochs):
-    logging.info('Epoch %d lr %e', epoch, scheduler.get_lr()[0])
-    step, total_loss, top1, top5 = train(train_loader) 
-    if step % args.report_freq == 0:
-            logging.info('train %03d %e %f %f ', step, total_loss, top1, top5)
 
-    if (epoch + 1) % 10 == 0:
-        model.eval()
-        val_loss = 0
-        with torch.no_grad():
-            for val_images, _ in valid_loader:
-                val_images = val_images.to(device)
-                val_outputs = model(val_images)
-                val_loss += criterion(val_outputs, val_images).item()
+if __name__ == "__main__": 
+    for epoch in range(args.epochs):
+        logging.info('Epoch %d lr %e', epoch, scheduler.get_lr()[0])
+        step, total_loss, top1, top5 = train(train_loader) 
+        if step % args.report_freq == 0:
+                logging.info('train %03d %e %f %f ', step, total_loss, top1, top5)
 
-        avg_val_loss = val_loss / len(valid_loader)
-        print(f"Validation Loss: {avg_val_loss:.4f}")
+        if (epoch + 1) % 10 == 0:
+            model.eval()
+            val_loss = 0
+            with torch.no_grad():
+                for val_images, _ in valid_loader:
+                    val_images = val_images.to(device)
+                    val_outputs = model(val_images)
+                    val_loss += criterion(val_outputs, val_images).item()
+
+            avg_val_loss = val_loss / len(valid_loader)
+            print(f"Validation Loss: {avg_val_loss:.4f}")
