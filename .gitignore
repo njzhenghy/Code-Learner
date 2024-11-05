@@ -4,3 +4,4 @@ __pretrain__
 data
 *.txt
 *.pt
+*.DS_Store
