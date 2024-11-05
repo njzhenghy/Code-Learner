@@ -5,8 +5,6 @@ import torch.nn as nn
 from model import ViT
 from data_loader import _data_loader
 import sys, os, time, logging
-import torch.backends.cudnn as cudnn
-import numpy as np
 from utils import AvgrageMeter, accuracy, seed_torch, save
 
 parser = argparse.ArgumentParser()
