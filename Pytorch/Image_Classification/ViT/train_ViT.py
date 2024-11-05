@@ -98,7 +98,7 @@ def train(train_loader, model, optimizer, criterion):
         top5.update(prec5, n=batch_n)
         
         if step % args.report_freq == 0:
-            logging.info('train %03d %e %f %f ', step, total_loss, top1, top5)
+            logging.info('train %03d %e %f %f ', step, total_loss.avg, top1.avg, top5.avg)
     
     return top1.avg    
 
@@ -125,7 +125,7 @@ def infer(valid_loader, model, optimizer, criterion):
         top5.update(prec5, n=batch_n)
 
         if step % args.report_freq == 0:
-            logging.info('valid %03d %e %f %f ', step, total_loss.avg, top1.avg, top5.avg)    
+            logging.info('valid step:%03d batch_loss:%e top1_avg:%f top5_avg:%f ', step, total_loss.avg, top1.avg, top5.avg)    
     
     return top1.avg
 
