@@ -30,10 +30,10 @@ parser.add_argument('--save', type=str, default='EXP', help='Experiment name')
 parser.add_argument('--dropout', type=float, default=0.1, help='Dropout probability')
 parser.add_argument('--grad_clip', type=float, default=5, help='Gradient clipping')
 parser.add_argument('--report_freq', type=float, default=10, help='Report frequency')
-parser.add_argument('--weight_decay', type=float, default=1e-4, help='Weight decay')  
+parser.add_argument('--weight_decay', type=float, default=1e-4, help='Weight decay of SGD')  
 args = parser.parse_args()
 
-args.save = 'eval_online_{}-{}-{}'.format(args.data_name, args.save, time.strftime("%Y%m%d-%H"))
+args.save = 'eval_online_{}-{}-{}'.format(args.dataset, args.save, time.strftime("%Y%m%d-%H"))
 if not os.path.exists(args.save):
     os.makedirs(args.save)
 
