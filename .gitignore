@@ -1,4 +1,5 @@
 Pytorch/.gitignore
 __pycache__
 data
-Pytorch/Image_Classification/ViT/operation.txt
+*.txt
+*.pt+

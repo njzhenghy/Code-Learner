@@ -2,7 +2,7 @@ import argparse
 import torch
 import torch.optim as optim
 import torch.nn as nn
-from model import ViT
+from model_vit import ViT
 from data_loader import data_loader
 import sys, os, time, logging
 from utils import AvgrageMeter, accuracy, seed_torch, save
@@ -33,7 +33,7 @@ parser.add_argument('--report_freq', type=float, default=10, help='Report freque
 parser.add_argument('--weight_decay', type=float, default=1e-4, help='Weight decay of SGD')  
 args = parser.parse_args()
 
-args.save = 'eval_online_{}-{}-{}'.format(args.dataset, args.save, time.strftime("%Y%m%d-%H"))
+args.save = 'train_ViT_{}-{}-{}'.format(args.dataset, args.save, time.strftime("%Y%m%d-%H%M%S"))
 if not os.path.exists(args.save):
     os.makedirs(args.save)
 
@@ -88,7 +88,7 @@ def train(train_loader, model, optimizer, criterion):
         batch_loss += loss.item()
        
         loss.backward()
-        nn.utils.clip_grad(model.parameters, args.grad_clip)
+        nn.utils.clip_grad_norm(model.parameters(), args.grad_clip)
         optimizer.step()
 
         prec1, prec5 = accuracy(outputs, labels, topk=(1, 5), batch_size=args.batch_size)
@@ -116,7 +116,7 @@ def infer(valid_loader, model, optimizer, criterion):
         loss = criterion(outputs, labels)
         batch_loss += loss.item()
         loss.backward()
-        nn.utils.clip_grad(model.parameters, args.grad_clip)
+        nn.utils.clip_grad_norm(model.parameters(), args.grad_clip)
         optimizer.step()
         prec1, prec5 = accuracy(outputs, labels, topk=(1, 5), batch_size=args.batch_size)
         batch_n = images.size(0)
@@ -125,13 +125,13 @@ def infer(valid_loader, model, optimizer, criterion):
         top5.update(prec5, n=batch_n)
 
         if step % args.report_freq == 0:
-            logging.info('valid %03d %e %f %f ', step, total_loss, top1, top5)    
+            logging.info('valid %03d %e %f %f ', step, total_loss.avg, top1.avg, top5.avg)    
     
     return top1.avg
 
 if __name__ == "__main__": 
     for epoch in range(args.epochs):
-        logging.info('Epoch %d lr %e', epoch, scheduler.get_lr()[0])
+        logging.info('Epoch %d lr %e', epoch, scheduler.get_last_lr()[0])
         train_acc = train(train_loader, model, optimizer, criterion) 
         logging.info('train_acc %f', train_acc)
         valid_acc = infer(valid_loader, model, optimizer, criterion)

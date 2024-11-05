@@ -24,7 +24,7 @@ class Cutout(object):
         return img
     
 
-def _data_transforms(args):
+def data_transforms(args):
     train_transform, valid_transform = None, None
 
     if args.dataset == 'mnist':
