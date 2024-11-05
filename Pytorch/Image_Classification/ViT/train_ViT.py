@@ -7,7 +7,7 @@ from data_loader import _data_loader
 import sys, os, time, logging
 import torch.backends.cudnn as cudnn
 import numpy as np
-from utils import AvgrageMeter, _accuracy
+from utils import AvgrageMeter, accuracy, seed_torch, save
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_root', type=str, default='../../data', help='location of the data corpus')
@@ -26,12 +26,13 @@ parser.add_argument('--heads', type=int, default=4, help='Number of heads')
 parser.add_argument('--dim', type=int, default=8, help='ViT Dimension')
 parser.add_argument('--mlp_dim', type=int, default=16, help='MLP Dimension')
 parser.add_argument('--dataset', type=str, default='cifar10', help='Name of dataset')
-parser.add_argument('--cutout', action='store_true', default=False, help='use cutout')
-parser.add_argument('--cutout_length', type=int, default=16, help='cutout length')
-parser.add_argument('--save', type=str, default='EXP', help='experiment name')
-parser.add_argument('--dropout', type=float, default=0.1, help='dropout probability')
-parser.add_argument('--grad_clip', type=float, default=5, help='gradient clipping')
-parser.add_argument('--report_freq', type=float, default=10, help='report frequency')
+parser.add_argument('--cutout', action='store_true', default=False, help='Use cutout')
+parser.add_argument('--cutout_length', type=int, default=16, help='Cutout length')
+parser.add_argument('--save', type=str, default='EXP', help='Experiment name')
+parser.add_argument('--dropout', type=float, default=0.1, help='Dropout probability')
+parser.add_argument('--grad_clip', type=float, default=5, help='Gradient clipping')
+parser.add_argument('--report_freq', type=float, default=10, help='Report frequency')
+parser.add_argument('--weight_decay', type=float, default=1e-4, help='Weight decay')  
 args = parser.parse_args()
 
 args.save = 'eval_online_{}-{}-{}'.format(args.data_name, args.save, time.strftime("%Y%m%d-%H"))
@@ -41,7 +42,7 @@ if not os.path.exists(args.save):
 log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
     format=log_format, datefmt='%m/%d %I:%M:%S %p')
-fh = logging.FileHandler(os.path.join(args.save, 'log.txt'))
+fh = logging.FileHandler(os.path.join(args.save, 'lr{}_wd{}_batch{}.txt'.format(args.lr, args.weight_decay, args.batch_size)))
 fh.setFormatter(logging.Formatter(log_format))
 logging.getLogger().addHandler(fh)
 
@@ -52,15 +53,10 @@ elif torch.backends.mps.is_built():
 else:
     sys.exit(2)
 
-np.random.seed(args.seed)
-torch.cuda.set_device(args.gpu)
-cudnn.benchmark = True
-torch.manual_seed(args.seed)
-cudnn.enabled=True
-torch.cuda.manual_seed(args.seed)
+
 logging.info('gpu device = %d' % args.gpu)
 logging.info("args = %s", args)
-
+seed_torch(args.seed)
 
 train_loader, valid_loader = _data_loader(args)
 model = ViT(
@@ -72,57 +68,78 @@ model = ViT(
     heads=args.heads,
     mlp_dim=args.mlp_dim,
     dropout=args.dropout,
-    emb_dropout=args.dropout,)
-optimizer = optim.Adam(model.parameters(), lr=args.lr)
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs))
-criterion = nn.CrossEntropyLoss()
-best_acc = 0.
+    emb_dropout=args.dropout,
+)
 model.to(device)
-
-
-def train(loader):
+optimizer = optim.Adam(model.parameters(), lr=args.lr)
+criterion = nn.CrossEntropyLoss()
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs))
+best_acc = -1.
+def train(train_loader, model, optimizer, criterion):
     model.train()
     batch_loss = 0
     total_loss = AvgrageMeter()
     top1 = AvgrageMeter()
     top5 = AvgrageMeter()
-    for step, (images, labels) in enumerate(loader):
+    for step, (images, labels) in enumerate(train_loader):
         images, labels = images.to(device), labels.to(device)
 
         optimizer.zero_grad()
         outputs = model(images)
         loss = criterion(outputs, labels)
         batch_loss += loss.item()
-
+       
         loss.backward()
         nn.utils.clip_grad(model.parameters, args.grad_clip)
         optimizer.step()
+
+        prec1, prec5 = accuracy(outputs, labels, topk=(1, 5), batch_size=args.batch_size)
+        batch_n = images.size(0)
+        total_loss.update(batch_loss, n=batch_n)
+        top1.update(prec1, n=batch_n)
+        top5.update(prec5, n=batch_n)
         
-        prec1, prec5 = _accuracy(outputs, labels, topk=(1, 5), batch_size=args.batch_size)
-        total_loss.update(batch_loss, n=args.batch_size)
-        top1.update(prec1, n=args.batch_size)
-        top5.update(prec5, n=args.batch_size)
+        if step % args.report_freq == 0:
+            logging.info('train %03d %e %f %f ', step, total_loss, top1, top5)
+    
+    return top1.avg    
 
-    return step, total_loss.avg, top1.avg, top5.avg
+def infer(valid_loader, model, optimizer, criterion):
+    model.eval()
+    batch_loss = 0
+    total_loss = AvgrageMeter()
+    top1 = AvgrageMeter()
+    top5 = AvgrageMeter()
+    for step, (images, labels) in enumerate(valid_loader):
+        images, labels = images.to(device), labels.to(device)
 
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        batch_loss += loss.item()
+        loss.backward()
+        nn.utils.clip_grad(model.parameters, args.grad_clip)
+        optimizer.step()
+        prec1, prec5 = accuracy(outputs, labels, topk=(1, 5), batch_size=args.batch_size)
+        batch_n = images.size(0)
+        total_loss.update(batch_loss, n=batch_n)
+        top1.update(prec1, n=batch_n)
+        top5.update(prec5, n=batch_n)
 
-
+        if step % args.report_freq == 0:
+            logging.info('valid %03d %e %f %f ', step, total_loss, top1, top5)    
+    
+    return top1.avg
 
 if __name__ == "__main__": 
     for epoch in range(args.epochs):
         logging.info('Epoch %d lr %e', epoch, scheduler.get_lr()[0])
-        step, total_loss, top1, top5 = train(train_loader) 
-        if step % args.report_freq == 0:
-                logging.info('train %03d %e %f %f ', step, total_loss, top1, top5)
+        train_acc = train(train_loader, model, optimizer, criterion) 
+        logging.info('train_acc %f', train_acc)
+        valid_acc = infer(valid_loader, model, optimizer, criterion)
+        logging.info('valid_acc %f', valid_acc)
+        scheduler.step()
 
-        if (epoch + 1) % 10 == 0:
-            model.eval()
-            val_loss = 0
-            with torch.no_grad():
-                for val_images, _ in valid_loader:
-                    val_images = val_images.to(device)
-                    val_outputs = model(val_images)
-                    val_loss += criterion(val_outputs, val_images).item()
-
-            avg_val_loss = val_loss / len(valid_loader)
-            print(f"Validation Loss: {avg_val_loss:.4f}")
+        if valid_acc > best_acc:
+            best_acc = valid_acc
+            save(model, os.path.join(args.save, 'weights.pt'))
