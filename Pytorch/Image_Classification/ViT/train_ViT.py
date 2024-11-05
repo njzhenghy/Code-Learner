@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 from model import ViT
-from data_loader import _data_loader
+from data_loader import data_loader
 import sys, os, time, logging
 from utils import AvgrageMeter, accuracy, seed_torch, save
 
@@ -56,7 +56,7 @@ logging.info('gpu device = %d' % args.gpu)
 logging.info("args = %s", args)
 seed_torch(args.seed)
 
-train_loader, valid_loader = _data_loader(args)
+args.num_classes, train_loader, valid_loader = data_loader(args)
 model = ViT(
     image_size=args.img_size,
     patch_size=args.patch_size,
