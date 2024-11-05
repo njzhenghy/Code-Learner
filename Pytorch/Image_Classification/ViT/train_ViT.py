@@ -82,11 +82,12 @@ best_acc = -1.
 
 def train(train_loader, model, optimizer, criterion):
     model.train()
-    batch_loss = 0
-    total_loss = AvgrageMeter()
-    top1 = AvgrageMeter()
-    top5 = AvgrageMeter()
     for step, (images, labels) in enumerate(train_loader):
+        batch_loss = 0
+        total_loss = AvgrageMeter()
+        top1 = AvgrageMeter()
+        top5 = AvgrageMeter()
+        
         images, labels = images.to(device), labels.to(device)
 
         optimizer.zero_grad()
