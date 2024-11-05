@@ -1,5 +1,6 @@
 Pytorch/.gitignore
 __pycache__
+__pretrain__
 data
 *.txt
 *.pt

@@ -5,7 +5,7 @@ import torch.nn as nn
 from model_vit import ViT
 from data_loader import data_loader
 import sys, os, time, logging
-from utils import AvgrageMeter, accuracy, seed_torch, save
+from utils import AvgrageMeter, accuracy, seed_torch, save, load
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_root', type=str, default='../../data', help='location of the data corpus')
@@ -18,11 +18,11 @@ parser.add_argument('--gpu', type=int, default=0, help='GPU ID')
 parser.add_argument('--img_size', type=int, default=28, help='Image size')
 parser.add_argument('--in_channels', type=int, default=3, help='Image channels')
 parser.add_argument('--num_classes', type=int, default=10, help='Number of classes')
-parser.add_argument('--patch_size', type=int, default=8, help='Patch size')
-parser.add_argument('--depth', type=int, default=6, help='Depth')
-parser.add_argument('--heads', type=int, default=4, help='Number of heads')
-parser.add_argument('--dim', type=int, default=8, help='ViT Dimension')
-parser.add_argument('--mlp_dim', type=int, default=16, help='MLP Dimension')
+parser.add_argument('--patch_size', type=int, default=16, help='Patch size')
+parser.add_argument('--depth', type=int, default=12, help='Depth')
+parser.add_argument('--heads', type=int, default=12, help='Number of heads')
+parser.add_argument('--hidden_dim', type=int, default=768, help='ViT Hidden Dimension')
+parser.add_argument('--mlp_dim', type=int, default=3072, help='MLP Dimension')
 parser.add_argument('--dataset', type=str, default='cifar10', help='Name of dataset')
 parser.add_argument('--cutout', action='store_true', default=False, help='Use cutout')
 parser.add_argument('--cutout_length', type=int, default=16, help='Cutout length')
@@ -31,6 +31,7 @@ parser.add_argument('--dropout', type=float, default=0.1, help='Dropout probabil
 parser.add_argument('--grad_clip', type=float, default=5, help='Gradient clipping')
 parser.add_argument('--report_freq', type=float, default=10, help='Report frequency')
 parser.add_argument('--weight_decay', type=float, default=1e-4, help='Weight decay of SGD')  
+parser.add_argument('--pre_train', action='store_true', default=False, help='Whether to load the pretrained model') 
 args = parser.parse_args()
 
 args.save = 'train_ViT_{}-{}-{}'.format(args.dataset, args.save, time.strftime("%Y%m%d-%H%M%S"))
@@ -61,18 +62,24 @@ model = ViT(
     image_size=args.img_size,
     patch_size=args.patch_size,
     num_classes=args.num_classes,
-    dim=args.dim,
+    dim=args.hidden_dim,
     depth=args.depth,
     heads=args.heads,
     mlp_dim=args.mlp_dim,
     dropout=args.dropout,
     emb_dropout=args.dropout,
 )
+# if args.pre_train:
+#     pre_model_path = './__pretrain__/vit_b_16-c867db91.pth'
+#     load(model, pre_model_path)
+
 model.to(device)
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 criterion = nn.CrossEntropyLoss()
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs))
 best_acc = -1.
+
+
 def train(train_loader, model, optimizer, criterion):
     model.train()
     batch_loss = 0
