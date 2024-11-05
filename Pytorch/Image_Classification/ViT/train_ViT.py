@@ -88,7 +88,7 @@ def train(train_loader, model, optimizer, criterion):
         batch_loss += loss.item()
        
         loss.backward()
-        nn.utils.clip_grad_norm(model.parameters(), args.grad_clip)
+        nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
         optimizer.step()
 
         prec1, prec5 = accuracy(outputs, labels, topk=(1, 5), batch_size=args.batch_size)
@@ -98,7 +98,7 @@ def train(train_loader, model, optimizer, criterion):
         top5.update(prec5, n=batch_n)
         
         if step % args.report_freq == 0:
-            logging.info('train %03d %e %f %f ', step, total_loss.avg, top1.avg, top5.avg)
+            logging.info('train step:%03d batch_loss:%e top1_avg:%f top5_avg:%f', step, total_loss.avg, top1.avg, top5.avg)
     
     return top1.avg    
 
@@ -116,7 +116,7 @@ def infer(valid_loader, model, optimizer, criterion):
         loss = criterion(outputs, labels)
         batch_loss += loss.item()
         loss.backward()
-        nn.utils.clip_grad_norm(model.parameters(), args.grad_clip)
+        nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
         optimizer.step()
         prec1, prec5 = accuracy(outputs, labels, topk=(1, 5), batch_size=args.batch_size)
         batch_n = images.size(0)
@@ -125,7 +125,7 @@ def infer(valid_loader, model, optimizer, criterion):
         top5.update(prec5, n=batch_n)
 
         if step % args.report_freq == 0:
-            logging.info('valid step:%03d batch_loss:%e top1_avg:%f top5_avg:%f ', step, total_loss.avg, top1.avg, top5.avg)    
+            logging.info('valid step:%03d batch_loss:%e top1_avg:%f top5_avg:%f', step, total_loss.avg, top1.avg, top5.avg)    
     
     return top1.avg
 
@@ -133,9 +133,9 @@ if __name__ == "__main__":
     for epoch in range(args.epochs):
         logging.info('Epoch %d lr %e', epoch, scheduler.get_last_lr()[0])
         train_acc = train(train_loader, model, optimizer, criterion) 
-        logging.info('train_acc %f', train_acc)
+        logging.info('Train_acc %f', train_acc)
         valid_acc = infer(valid_loader, model, optimizer, criterion)
-        logging.info('valid_acc %f', valid_acc)
+        logging.info('Valid_acc %f', valid_acc)
         scheduler.step()
 
         if valid_acc > best_acc:

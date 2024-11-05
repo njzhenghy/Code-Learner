@@ -2,4 +2,4 @@ Pytorch/.gitignore
 __pycache__
 data
 *.txt
-*.pt+
+*.pt
