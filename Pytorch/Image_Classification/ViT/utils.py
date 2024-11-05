@@ -1,5 +1,5 @@
 from torchvision import transforms
-import torch, sys
+import torch, sys, os
 import numpy as np
 
 class Cutout(object):
@@ -89,7 +89,7 @@ class AvgrageMeter(object):
 
 
 
-def _accuracy(output, target, topk=(1,), batch_size=16):
+def accuracy(output, target, topk=(1,), batch_size=16):
     maxk = max(topk)
     batch_size = target.size(0)
 
@@ -102,3 +102,17 @@ def _accuracy(output, target, topk=(1,), batch_size=16):
         correct_k = correct[:k].reshape(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
+
+
+def seed_torch(seed=21):
+    np.random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.benchmark = False  # 禁用 CuDNN 的 benchmark 模式，以确保每次运行都有相同的结果
+    torch.backends.cudnn.deterministic = True  # 启用 CuDNN 的确定性模式，进一步确保可重复性
+
+def save(model, model_path):
+    torch.save(model.state_dict(), model_path)
