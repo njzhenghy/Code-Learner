@@ -110,13 +110,12 @@ def train(train_loader, model, optimizer, criterion):
 
 def infer(valid_loader, model, optimizer, criterion):
     model.eval()
-    batch_loss = 0
     total_loss = AvgrageMeter()
     top1 = AvgrageMeter()
     top5 = AvgrageMeter()
     for step, (images, labels) in enumerate(valid_loader):
+        batch_loss = 0
         images, labels = images.to(device), labels.to(device)
-
         optimizer.zero_grad()
         outputs = model(images)
         loss = criterion(outputs, labels)
