@@ -10,7 +10,7 @@ from utils import AvgrageMeter, accuracy, seed_torch, save, load
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_root', type=str, default='../../data', help='location of the data corpus')
 parser.add_argument('--epochs', type=int, default=50, help='Number of epochs to train')
-parser.add_argument('--lr', type=float, default=0.01, help='Learning rate')
+parser.add_argument('--lr', type=float, default=0.05, help='Learning rate')
 parser.add_argument('--batch_size', type=int, default=16, help='Batch size')
 parser.add_argument('--seed', type=int, default=32, help='Random seed')
 parser.add_argument('--device', type=str, default='cuda', help='Device used for training & validation')
@@ -69,9 +69,9 @@ model = ViT(
     dropout=args.dropout,
     emb_dropout=args.dropout,
 )
-# if args.pre_train:
-#     pre_model_path = './__pretrain__/vit_b_16-c867db91.pth'
-#     load(model, pre_model_path)
+if args.pre_train:
+    pre_model_path = './__pretrain__/weights.pt'
+    load(model, pre_model_path)
 
 model.to(device)
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
