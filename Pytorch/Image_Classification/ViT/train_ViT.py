@@ -31,6 +31,7 @@ parser.add_argument('--dropout', type=float, default=0.1, help='Dropout probabil
 parser.add_argument('--grad_clip', type=float, default=5, help='Gradient clipping')
 parser.add_argument('--report_freq', type=float, default=10, help='Report frequency')
 parser.add_argument('--weight_decay', type=float, default=1e-4, help='Weight decay of SGD')  
+parser.add_argument('--momentum', type=float, default=0.9, help='Momentum')
 parser.add_argument('--pre_train', action='store_true', default=False, help='Whether to load the pretrained model') 
 args = parser.parse_args()
 
@@ -74,7 +75,7 @@ if args.pre_train:
     load(model, pre_model_path)
 
 model.to(device)
-optimizer = optim.Adam(model.parameters(), lr=args.lr)
+optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=True)
 criterion = nn.CrossEntropyLoss()
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs))
 best_acc = -1.
