@@ -32,7 +32,7 @@ parser.add_argument('--grad_clip', type=float, default=5, help='Gradient clippin
 parser.add_argument('--report_freq', type=float, default=10, help='Report frequency')
 parser.add_argument('--weight_decay', type=float, default=1e-4, help='Weight decay of SGD')  
 parser.add_argument('--momentum', type=float, default=0.9, help='Momentum')
-parser.add_argument('--weight_root', type=str, default='__checkpoint__', help='weight file') 
+parser.add_argument('--weight_root', type=str, default='.\__checkpoint__\weights.pt', help='weight file') 
 args = parser.parse_args()
 
 args.save = 'test_ViT_{}-{}-{}'.format(args.dataset, args.save, time.strftime("%Y%m%d-%H%M%S"))
