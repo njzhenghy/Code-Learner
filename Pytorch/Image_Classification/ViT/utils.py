@@ -51,7 +51,7 @@ def data_transforms(args):
         CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
         train_transform = transforms.Compose([
             transforms.Resize(args.img_size),
-            # transforms.RandomHorizontalFlip(),
+            transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
         ])
@@ -66,7 +66,26 @@ def data_transforms(args):
     
     elif args.dataset == 'tiny-imagenet':
         pass
-    
+    elif args.dataset == 'cifar100':
+        CIFAR100_MEAN = [0.50707516, 0.48654887, 0.44091784]
+        CIFAR100_STD = [0.2673344 , 0.25643831, 0.27615047]
+
+        train_transform = transforms.Compose([
+            transforms.Resize(args.img_size),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(CIFAR100_MEAN, CIFAR100_STD),
+        ])
+
+        if args.cutout:
+            train_transform.transforms.append(Cutout(args.cutout_length))
+
+        valid_transform = transforms.Compose([
+            transforms.Resize(args.img_size),
+            transforms.ToTensor(),
+            transforms.Normalize(CIFAR100_MEAN, CIFAR100_STD),
+        ])
+
     else:
         print('dataset error')
         sys.exit(1)
@@ -119,4 +138,5 @@ def save(model, model_path):
     torch.save(model.state_dict(), model_path)
 
 def load(model, model_path):
-    model.load_state_dict(torch.load(model_path))
+    with open(model_path, 'rb') as f:
+        model.load_state_dict(torch.load(f))

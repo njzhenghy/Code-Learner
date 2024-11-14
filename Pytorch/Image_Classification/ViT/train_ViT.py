@@ -33,6 +33,7 @@ parser.add_argument('--report_freq', type=float, default=10, help='Report freque
 parser.add_argument('--weight_decay', type=float, default=1e-4, help='Weight decay of SGD')  
 parser.add_argument('--momentum', type=float, default=0.9, help='Momentum')
 parser.add_argument('--pre_train', action='store_true', default=False, help='Whether to load the pretrained model') 
+parser.add_argument('--weight_root', type=str, default='.\__pretrain__\weights.pt', help='weight file') 
 args = parser.parse_args()
 
 args.save = 'train_ViT_{}-{}-{}'.format(args.dataset, args.save, time.strftime("%Y%m%d-%H%M%S"))
@@ -71,8 +72,7 @@ model = ViT(
     emb_dropout=args.dropout,
 )
 if args.pre_train:
-    pre_model_path = './__pretrain__/weights.pt'
-    load(model, pre_model_path)
+    load(model, args.weight_root)
 
 model.to(device)
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=True)
@@ -116,22 +116,20 @@ def infer(valid_loader, model, optimizer, criterion):
     top5 = AvgrageMeter()
     for step, (images, labels) in enumerate(valid_loader):
         batch_loss = 0
-        images, labels = images.to(device), labels.to(device)
-        optimizer.zero_grad()
-        outputs = model(images)
-        loss = criterion(outputs, labels)
-        batch_loss += loss.item()
-        loss.backward()
-        nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
-        optimizer.step()
-        prec1, prec5 = accuracy(outputs, labels, topk=(1, 5), batch_size=args.batch_size)
-        batch_n = images.size(0)
-        total_loss.update(batch_loss, n=batch_n)
-        top1.update(prec1, n=batch_n)
-        top5.update(prec5, n=batch_n)
+        with torch.no_grad():
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            batch_loss += loss.item()
+            nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+            prec1, prec5 = accuracy(outputs, labels, topk=(1, 5), batch_size=args.batch_size)
+            batch_n = images.size(0)
+            total_loss.update(batch_loss, n=batch_n)
+            top1.update(prec1, n=batch_n)
+            top5.update(prec5, n=batch_n)
 
-        if step % args.report_freq == 0:
-            logging.info('valid step:%03d batch_loss:%e top1_avg:%f top5_avg:%f', step, total_loss.avg, top1.avg, top5.avg)    
+            if step % args.report_freq == 0:
+                logging.info('valid step:%03d batch_loss:%e top1_avg:%f top5_avg:%f', step, total_loss.avg, top1.avg, top5.avg)    
     
     return top1.avg
 

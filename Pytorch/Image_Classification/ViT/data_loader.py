@@ -28,7 +28,14 @@ def data_loader(args):
 
     elif args.dataset == 'tiny-imagenet':
         pass
+    elif args.dataset == 'cifar100':
+        num_classes = 100
+        train_transform, valid_transform = data_transforms(args)
+        train_dataset = datasets.CIFAR100(root=args.data_root, train=True, transform=train_transform, download=True)
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
+        valid_dataset = datasets.CIFAR100(root=args.data_root, train=False, transform=valid_transform, download=True)
+        valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=True)
     else:
         print('dataset error')
         sys.exit(1)
