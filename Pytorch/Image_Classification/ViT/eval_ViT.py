@@ -32,7 +32,7 @@ parser.add_argument('--grad_clip', type=float, default=5, help='Gradient clippin
 parser.add_argument('--report_freq', type=float, default=10, help='Report frequency')
 parser.add_argument('--weight_decay', type=float, default=1e-4, help='Weight decay of SGD')  
 parser.add_argument('--momentum', type=float, default=0.9, help='Momentum')
-parser.add_argument('--weight_root', type=str, default='../../__checkpoint__', help='weight file') 
+parser.add_argument('--weight_root', type=str, default='__checkpoint__', help='weight file') 
 args = parser.parse_args()
 
 args.save = 'test_ViT_{}-{}-{}'.format(args.dataset, args.save, time.strftime("%Y%m%d-%H%M%S"))
@@ -78,12 +78,12 @@ optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, we
 criterion = nn.CrossEntropyLoss()
  
 
-def infer(valid_loader, model, optimizer, criterion):
+def infer(test_loader, model, optimizer, criterion):
     model.eval()
     total_loss = AvgrageMeter()
     top1 = AvgrageMeter()
     top5 = AvgrageMeter()
-    for step, (images, labels) in enumerate(valid_loader):
+    for step, (images, labels) in enumerate(test_loader):
         batch_loss = 0
         images, labels = images.to(device), labels.to(device)
         optimizer.zero_grad()
@@ -100,7 +100,7 @@ def infer(valid_loader, model, optimizer, criterion):
         top5.update(prec5, n=batch_n)
 
         if step % args.report_freq == 0:
-            logging.info('valid step:%03d batch_loss:%e top1_avg:%f top5_avg:%f', step, total_loss.avg, top1.avg, top5.avg)    
+            logging.info('eval step:%03d batch_loss:%e top1_avg:%f top5_avg:%f', step, total_loss.avg, top1.avg, top5.avg)    
     
     return top1.avg
 

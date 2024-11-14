@@ -51,7 +51,7 @@ def data_transforms(args):
         CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
         train_transform = transforms.Compose([
             transforms.Resize(args.img_size),
-            # transforms.RandomHorizontalFlip(),
+            transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
         ])
