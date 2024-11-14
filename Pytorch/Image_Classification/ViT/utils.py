@@ -66,7 +66,26 @@ def data_transforms(args):
     
     elif args.dataset == 'tiny-imagenet':
         pass
-    
+    elif args.dataset == 'cifar100':
+        CIFAR100_MEAN = [0.50707516, 0.48654887, 0.44091784]
+        CIFAR100_STD = [0.2673344 , 0.25643831, 0.27615047]
+
+        train_transform = transforms.Compose([
+            transforms.Resize(args.img_size),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(CIFAR100_MEAN, CIFAR100_STD),
+        ])
+
+        if args.cutout:
+            train_transform.transforms.append(Cutout(args.cutout_length))
+
+        valid_transform = transforms.Compose([
+            transforms.Resize(args.img_size),
+            transforms.ToTensor(),
+            transforms.Normalize(CIFAR100_MEAN, CIFAR100_STD),
+        ])
+
     else:
         print('dataset error')
         sys.exit(1)
