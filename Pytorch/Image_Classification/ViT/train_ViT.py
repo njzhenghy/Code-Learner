@@ -33,6 +33,7 @@ parser.add_argument('--report_freq', type=float, default=10, help='Report freque
 parser.add_argument('--weight_decay', type=float, default=1e-4, help='Weight decay of SGD')  
 parser.add_argument('--momentum', type=float, default=0.9, help='Momentum')
 parser.add_argument('--pre_train', action='store_true', default=False, help='Whether to load the pretrained model') 
+parser.add_argument('--weight_root', type=str, default='.\__pretrain__\weights.pt', help='weight file') 
 args = parser.parse_args()
 
 args.save = 'train_ViT_{}-{}-{}'.format(args.dataset, args.save, time.strftime("%Y%m%d-%H%M%S"))
@@ -71,8 +72,7 @@ model = ViT(
     emb_dropout=args.dropout,
 )
 if args.pre_train:
-    pre_model_path = './__pretrain__/weights.pt'
-    load(model, pre_model_path)
+    load(model, args.weight_root)
 
 model.to(device)
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=True)
