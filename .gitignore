@@ -6,3 +6,4 @@ data
 *.txt
 *.pt
 *.DS_Store
+.bat
