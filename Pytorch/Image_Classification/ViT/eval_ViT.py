@@ -5,7 +5,7 @@ import torch.nn as nn
 from model_vit import ViT
 from data_loader import data_loader
 import sys, os, time, logging
-from utils import accuracy, seed_torch, save, load
+from utils import AverageMeter, accuracy, seed_torch, save, load
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_root', type=str, default='../../data', help='location of the data corpus')
@@ -80,9 +80,9 @@ criterion = nn.CrossEntropyLoss()
 
 def infer(test_loader, model, optimizer, criterion):
     model.eval()
-    total_loss = AvgrageMeter()
-    top1 = AvgrageMeter()
-    top5 = AvgrageMeter()
+    total_loss = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
     for step, (images, labels) in enumerate(test_loader):
         batch_loss = 0
         images, labels = images.to(device), labels.to(device)
