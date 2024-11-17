@@ -81,7 +81,7 @@ class Transformer(nn.Module):
 
 
 class ViT_encoder(nn.Module):
-    def __init__(self, *, image_size, patch_size, dim, depth, heads, mlp_dim, pool='cls', channels=3,
+    def __init__(self, image_size, patch_size, dim, depth, heads, mlp_dim, pool='cls', channels=3,
                  dim_head=64, dropout=0., emb_dropout=0.):
         super().__init__()
         image_height, image_width = pair(image_size)
@@ -128,11 +128,11 @@ class ViT_encoder(nn.Module):
 
 
 class ViT(nn.Module):
-    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool='cls', channels=3,
+    def __init__(self, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool='cls', channels=3,
                  dim_head=64, dropout=0., emb_dropout=0.):
         super().__init__()
         self.encoder = ViT_encoder(image_size, patch_size, dim, depth, heads, 
-                    mlp_dim, pool='cls', channels=3, dim_head=64, dropout=0., emb_dropout=0.)
+                    mlp_dim, pool, channels, dim_head, dropout, emb_dropout)
         self.classifier = nn.Linear(dim, num_classes)
 
     def forward(self, img):
@@ -144,10 +144,20 @@ class ViT(nn.Module):
 
 
 if __name__ == '__main__':
-    v = ViT(
+    # v = ViT(
+    #     image_size=256,
+    #     patch_size=32,
+    #     num_classes=10,
+    #     dim=1024,
+    #     depth=6,
+    #     heads=16,
+    #     mlp_dim=2048,
+    #     dropout=0.1,
+    #     emb_dropout=0.1
+    # )
+    model = ViT_encoder(
         image_size=256,
         patch_size=32,
-        num_classes=10,
         dim=1024,
         depth=6,
         heads=16,
@@ -157,6 +167,6 @@ if __name__ == '__main__':
     )
 
     img = torch.randn(1, 3, 256, 256)
-    preds = v(img)  # (1, 1000)
+    preds = model(img)  # (1, dim)
     print(preds.shape)
 
