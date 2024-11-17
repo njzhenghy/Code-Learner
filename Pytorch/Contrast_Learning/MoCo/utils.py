@@ -5,7 +5,7 @@ def save_checkpoint(model, model_path):
     torch.save(model.state_dict(), model_path)
 
 
-class AvgrageMeter():
+class AverageMeter():
     def __init__(self):
         self.reset()
 
