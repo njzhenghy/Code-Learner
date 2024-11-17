@@ -5,8 +5,13 @@ from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 
 
+# helpers
+
 def pair(t):
     return t if isinstance(t, tuple) else (t, t)
+
+
+# classes
 
 class FeedForward(nn.Module):
     def __init__(self, dim, hidden_dim, dropout=0.):
@@ -80,8 +85,8 @@ class Transformer(nn.Module):
         return self.norm(x)
 
 
-class ViT_encoder(nn.Module):
-    def __init__(self, image_size, patch_size, dim, depth, heads, mlp_dim, pool='cls', channels=3,
+class ViT(nn.Module):
+    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool='cls', channels=3,
                  dim_head=64, dropout=0., emb_dropout=0.):
         super().__init__()
         image_height, image_width = pair(image_size)
@@ -109,6 +114,8 @@ class ViT_encoder(nn.Module):
         self.pool = pool
         self.to_latent = nn.Identity()
 
+        self.mlp_head = nn.Linear(dim, num_classes)
+
     def forward(self, img):
         x = self.to_patch_embedding(img)
         b, n, _ = x.shape
@@ -123,41 +130,14 @@ class ViT_encoder(nn.Module):
         x = x.mean(dim=1) if self.pool == 'mean' else x[:, 0]
 
         x = self.to_latent(x)
-       
-        return x
-
-
-class ViT(nn.Module):
-    def __init__(self, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool='cls', channels=3,
-                 dim_head=64, dropout=0., emb_dropout=0.):
-        super().__init__()
-        self.encoder = ViT_encoder(image_size, patch_size, dim, depth, heads, 
-                    mlp_dim, pool, channels, dim_head, dropout, emb_dropout)
-        self.classifier = nn.Linear(dim, num_classes)
-
-    def forward(self, img):
-        x = self.encoder(img)
-        x = self.classifier(x)
-
-        return x
-
+        return x, self.mlp_head(x)
 
 
 if __name__ == '__main__':
-    # v = ViT(
-    #     image_size=256,
-    #     patch_size=32,
-    #     num_classes=10,
-    #     dim=1024,
-    #     depth=6,
-    #     heads=16,
-    #     mlp_dim=2048,
-    #     dropout=0.1,
-    #     emb_dropout=0.1
-    # )
-    model = ViT_encoder(
+    v = ViT(
         image_size=256,
         patch_size=32,
+        num_classes=10,
         dim=1024,
         depth=6,
         heads=16,
@@ -167,6 +147,6 @@ if __name__ == '__main__':
     )
 
     img = torch.randn(1, 3, 256, 256)
-    preds = model(img)  # (1, dim)
-    print(preds.shape)
+    feature, preds = v(img)  # (1, 1000)
+    print(preds.shape, feature.shape)
 

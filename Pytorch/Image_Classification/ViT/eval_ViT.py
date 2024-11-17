@@ -5,7 +5,7 @@ import torch.nn as nn
 from model_vit import ViT
 from data_loader import data_loader
 import sys, os, time, logging
-from utils import AvgrageMeter, accuracy, seed_torch, save, load
+from utils import accuracy, seed_torch, save, load
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_root', type=str, default='../../data', help='location of the data corpus')

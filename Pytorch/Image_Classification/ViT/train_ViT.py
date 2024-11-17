@@ -5,7 +5,7 @@ import torch.nn as nn
 from model_vit import ViT
 from data_loader import data_loader
 import sys, os, time, logging
-from utils import AvgrageMeter, accuracy, seed_torch, save, load
+from utils import AverageMeter, accuracy, seed_torch, save, load
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_root', type=str, default='../../data', help='location of the data corpus')
@@ -82,9 +82,9 @@ best_acc = -1.
 
 
 def train(train_loader, model, optimizer, criterion):
-    total_loss = AvgrageMeter()
-    top1 = AvgrageMeter()
-    top5 = AvgrageMeter()
+    total_loss = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
     model.train()
     for step, (images, labels) in enumerate(train_loader):
         images, labels = images.to(device), labels.to(device)
@@ -111,9 +111,9 @@ def train(train_loader, model, optimizer, criterion):
 
 def infer(valid_loader, model, optimizer, criterion):
     model.eval()
-    total_loss = AvgrageMeter()
-    top1 = AvgrageMeter()
-    top5 = AvgrageMeter()
+    total_loss = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
     for step, (images, labels) in enumerate(valid_loader):
         batch_loss = 0
         with torch.no_grad():
