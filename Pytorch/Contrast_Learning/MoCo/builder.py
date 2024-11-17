@@ -105,7 +105,7 @@ class MoCo(nn.Module):
         """
 
         # compute query features
-        q = self.encoder_q(im_q)  # queries: NxC
+        _, q = self.encoder_q(im_q)  # queries: NxC
         q = nn.functional.normalize(q, dim=1)
 
         # compute key features
@@ -115,7 +115,7 @@ class MoCo(nn.Module):
             # shuffle for making use of BN
             im_k, idx_unshuffle = self._batch_shuffle(im_k)
 
-            k = self.encoder_k(im_k)  # keys: NxC
+            _, k = self.encoder_k(im_k)  # keys: NxC
             k = nn.functional.normalize(k, dim=1)
 
             # undo shuffle
