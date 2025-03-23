@@ -33,7 +33,7 @@ def data_transforms(args):
         train_transform = transforms.Compose([
             transforms.RandomCrop(28, padding=4),
             transforms.RandomHorizontalFlip(),
-            transforms.Grayscale(num_output_channels=3),
+            transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
             transforms.Normalize(MNIST_MEAN, MNIST_STD)
         ])
@@ -41,7 +41,7 @@ def data_transforms(args):
             train_transform.transforms.append(Cutout(args.cutout_length))
         
         valid_transform = transforms.Compose([
-            transforms.Grayscale(num_output_channels=3),
+            transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
             transforms.Normalize(MNIST_MEAN, MNIST_STD),
         ])

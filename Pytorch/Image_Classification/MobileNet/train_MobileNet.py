@@ -2,7 +2,7 @@ import argparse
 import torch
 import torch.optim as optim
 import torch.nn as nn
-from model_vit import ViT
+from model_MobileNet import MobileNetV2
 from data_loader import data_loader
 import sys, os, time, logging
 from utils import AverageMeter, accuracy, seed_torch, save, load
@@ -32,10 +32,11 @@ parser.add_argument('--grad_clip', type=float, default=5, help='Gradient clippin
 parser.add_argument('--report_freq', type=float, default=10, help='Report frequency')
 parser.add_argument('--weight_decay', type=float, default=1e-4, help='Weight decay of SGD')  
 parser.add_argument('--momentum', type=float, default=0.9, help='Momentum')
-parser.add_argument('--weight_root', type=str, default='.\__checkpoint__\weights.pt', help='weight file') 
+parser.add_argument('--pre_train', action='store_true', default=False, help='Whether to load the pretrained model') 
+parser.add_argument('--weight_root', type=str, default='.\__pretrain__\weights.pt', help='weight file') 
 args = parser.parse_args()
 
-args.save = 'test_ViT_{}-{}-{}'.format(args.dataset, args.save, time.strftime("%Y%m%d-%H%M%S"))
+args.save = 'train_MobileNetv2_{}-{}-{}'.format(args.dataset, args.save, time.strftime("%Y%m%d-%H%M%S"))
 if not os.path.exists(args.save):
     os.makedirs(args.save)
 
@@ -58,52 +59,80 @@ logging.info('gpu device = %d' % args.gpu)
 logging.info("args = %s", args)
 seed_torch(args.seed)
 
-args.num_classes, _, test_loader = data_loader(args)
-model = ViT(
-    image_size=args.img_size,
-    patch_size=args.patch_size,
-    num_classes=args.num_classes,
-    dim=args.hidden_dim,
-    depth=args.depth,
-    heads=args.heads,
-    mlp_dim=args.mlp_dim,
-    dropout=args.dropout,
-    emb_dropout=args.dropout,
-)
+args.num_classes, train_loader, valid_loader = data_loader(args)
+model = MobileNetV2()
 
-load(model, args.weight_root)
+if args.pre_train:
+    load(model, args.weight_root)
 
 model.to(device)
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=True)
 criterion = nn.CrossEntropyLoss()
- 
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs))
+best_acc = -1.
 
-def infer(test_loader, model, optimizer, criterion):
-    model.eval()
+
+def train(train_loader, model, optimizer, criterion):
     total_loss = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
-    for step, (images, labels) in enumerate(test_loader):
-        batch_loss = 0
+    model.train()
+    for step, (images, labels) in enumerate(train_loader):
         images, labels = images.to(device), labels.to(device)
+        batch_loss = 0
         optimizer.zero_grad()
         outputs = model(images)
         loss = criterion(outputs, labels)
         batch_loss += loss.item()
+       
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
         optimizer.step()
+
         prec1, prec5 = accuracy(outputs, labels, topk=(1, 5), batch_size=args.batch_size)
         batch_n = images.size(0)
         total_loss.update(batch_loss, n=batch_n)
         top1.update(prec1, n=batch_n)
         top5.update(prec5, n=batch_n)
-
+        
         if step % args.report_freq == 0:
-            logging.info('eval step:%03d batch_loss:%e top1_avg:%f top5_avg:%f', step, total_loss.avg, top1.avg, top5.avg)    
+            logging.info('train step:%03d batch_loss:%e top1_avg:%f top5_avg:%f', step, total_loss.avg, top1.avg, top5.avg)
+    
+    return top1.avg    
+
+def infer(valid_loader, model, optimizer, criterion):
+    model.eval()
+    total_loss = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
+    for step, (images, labels) in enumerate(valid_loader):
+        batch_loss = 0
+        with torch.no_grad():
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            batch_loss += loss.item()
+            nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+            prec1, prec5 = accuracy(outputs, labels, topk=(1, 5), batch_size=args.batch_size)
+            batch_n = images.size(0)
+            total_loss.update(batch_loss, n=batch_n)
+            top1.update(prec1, n=batch_n)
+            top5.update(prec5, n=batch_n)
+
+            if step % args.report_freq == 0:
+                logging.info('valid step:%03d batch_loss:%e top1_avg:%f top5_avg:%f', step, total_loss.avg, top1.avg, top5.avg)    
     
     return top1.avg
 
 if __name__ == "__main__": 
-    test_acc = infer(test_loader, model, optimizer, criterion)
-    logging.info('Test_acc %f', test_acc)
+    for epoch in range(args.epochs):
+        logging.info('Epoch %d lr %e', epoch, scheduler.get_last_lr()[0])
+        train_acc = train(train_loader, model, optimizer, criterion) 
+        logging.info('Train_acc %f', train_acc)
+        valid_acc = infer(valid_loader, model, optimizer, criterion)
+        logging.info('Valid_acc %f', valid_acc)
+        scheduler.step()
+
+        if valid_acc > best_acc:
+            best_acc = valid_acc
+            save(model, os.path.join(args.save, 'weights.pt'))

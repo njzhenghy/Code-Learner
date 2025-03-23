@@ -2,7 +2,7 @@ import argparse
 import torch
 import torch.optim as optim
 import torch.nn as nn
-from model_vit import ViT
+from Pytorch.Image_Classification.MobileNet.model_MobileNet import MobileNetV2
 from data_loader import data_loader
 import sys, os, time, logging
 from utils import AverageMeter, accuracy, seed_torch, save, load
@@ -35,7 +35,7 @@ parser.add_argument('--momentum', type=float, default=0.9, help='Momentum')
 parser.add_argument('--weight_root', type=str, default='.\__checkpoint__\weights.pt', help='weight file') 
 args = parser.parse_args()
 
-args.save = 'test_ViT_{}-{}-{}'.format(args.dataset, args.save, time.strftime("%Y%m%d-%H%M%S"))
+args.save = 'test_MobileNetv2_{}-{}-{}'.format(args.dataset, args.save, time.strftime("%Y%m%d-%H%M%S"))
 if not os.path.exists(args.save):
     os.makedirs(args.save)
 
@@ -59,17 +59,8 @@ logging.info("args = %s", args)
 seed_torch(args.seed)
 
 args.num_classes, _, test_loader = data_loader(args)
-model = ViT(
-    image_size=args.img_size,
-    patch_size=args.patch_size,
-    num_classes=args.num_classes,
-    dim=args.hidden_dim,
-    depth=args.depth,
-    heads=args.heads,
-    mlp_dim=args.mlp_dim,
-    dropout=args.dropout,
-    emb_dropout=args.dropout,
-)
+
+model = MobileNetV2()
 
 load(model, args.weight_root)
 
